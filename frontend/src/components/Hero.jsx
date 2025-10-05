@@ -12,7 +12,7 @@ const Hero = () => {
         <div className="mt-6 flex flex-wrap gap-3">
           <a
             href="/courses"
-            className="rounded-xl bg-[#1c48a5] px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
+            className="rounded-xl bg-[#1c48a5] px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 cursor-pointer"
           >
             View Courses
           </a>

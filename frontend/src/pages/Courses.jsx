@@ -1,37 +1,176 @@
-import Card from "../components/Card"
+import { useEffect, useMemo, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import Card from "../components/Card";
+import Toast from "../components/Toast";
+import ConfirmDialog from "../components/ConfirmDialog";
+import {
+  setLoading,
+  setError,
+  setCourses,
+  addCourse,
+  updateCourseLocal,
+  removeCourseLocal,
+  startEdit,
+  clearEdit,
+} from "../redux/courseSlice";
+import * as api from "../services/coursesApi";
+
+const initialForm = { name: "", subject: "", credits: "", description: "" };
 
 const Courses = () => {
+  const dispatch = useDispatch();
+  const { items, loading, editId } = useSelector((s) => s.courses);
 
-    const rows = [
-    { id: 1, name: "Intro to Web Dev", subject: "CS", credits: 3, desc: "HTML/CSS/JS fundamentals." },
-    { id: 2, name: "Data Structures", subject: "CS", credits: 4, desc: "Lists, stacks, queues, trees." },
-  ];
+  const [form, setForm] = useState(initialForm);
+  const [toast, setToast] = useState({
+    show: false,
+    type: "success",
+    message: "",
+  });
+  const [confirm, setConfirm] = useState({ open: false, id: null });
+
+  useEffect(() => {
+    (async () => {
+      dispatch(setLoading(true));
+      try {
+        const data = await api.fetchCourses();
+        dispatch(setCourses(data));
+      } catch (e) {
+        dispatch(setError(e.message));
+        setToast({
+          show: true,
+          type: "error",
+          message: "Failed to load courses.",
+        });
+      } finally {
+        dispatch(setLoading(false));
+      }
+    })();
+  }, [dispatch]);
+
+  useEffect(() => {
+    if (!editId) return;
+    const course = items.find((c) => c._id === editId);
+    if (!course) return;
+    setForm({
+      name: course.name ?? "",
+      subject: course.subject ?? "",
+      credits: String(course.credits ?? ""),
+      description: course.description ?? "",
+    });
+  }, [editId, items]);
+
+  const isEdit = useMemo(() => Boolean(editId), [editId]);
+
+  const onChange = (e) => {
+    const { name, value } = e.target;
+    setForm((f) => ({ ...f, [name]: value }));
+  };
+
+  const clean = (f) => ({
+    name: f.name.trim(),
+    subject: f.subject.trim(),
+    credits: Number(f.credits || 0),
+    description: f.description.trim(),
+  });
+
+  const onSave = async () => {
+    const body = clean(form);
+    try {
+      if (isEdit) {
+        const updated = await api.updateCourse(editId, body);
+        dispatch(updateCourseLocal(updated));
+        setToast({ show: true, type: "success", message: "Course updated." });
+      } else {
+        const created = await api.createCourse(body);
+        dispatch(addCourse(created));
+        setToast({ show: true, type: "success", message: "Course added." });
+      }
+      setForm(initialForm);
+      dispatch(clearEdit());
+    } catch (e) {
+      setToast({
+        show: true,
+        type: "error",
+        message: e?.response?.data?.message || "Save failed.",
+      });
+    }
+  };
+
+  const onEditClick = (course) => dispatch(startEdit(course._id));
+
+  const askDelete = (id) => setConfirm({ open: true, id });
+
+  const onConfirmDelete = async () => {
+    try {
+      await api.deleteCourse(confirm.id);
+      dispatch(removeCourseLocal(confirm.id));
+      setToast({ show: true, type: "success", message: "Course deleted." });
+    } catch {
+      setToast({ show: true, type: "error", message: "Delete failed." });
+    } finally {
+      setConfirm({ open: false, id: null });
+    }
+  };
+
+  const onReset = () => {
+    setForm(initialForm);
+    dispatch(clearEdit());
+  };
 
   return (
     <div className="mx-auto max-w-6xl space-y-6 px-4 py-10">
       <Card
-        title="Add Course"
+        title={isEdit ? "Edit Course" : "Add Course"}
         action={
           <span className="rounded-md border border-slate-700 px-2 py-1 text-xs text-slate-300">
-            UI only (no logic yet)
+            {loading ? "Loading..." : isEdit ? "Editing" : "Create"}
           </span>
         }
       >
         <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-          <input className="rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm"
-                 placeholder="Course Name" />
-          <input className="rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm"
-                 placeholder="Subject Area" />
-          <input className="rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm"
-                 placeholder="Credits" />
+          <input
+            name="name"
+            value={form.name}
+            onChange={onChange}
+            className="rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm"
+            placeholder="Course Name"
+          />
+          <input
+            name="subject"
+            value={form.subject}
+            onChange={onChange}
+            className="rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm"
+            placeholder="Subject Area"
+          />
+          <input
+            name="credits"
+            value={form.credits}
+            onChange={onChange}
+            className="rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm"
+            placeholder="Credits 1 to 4"
+          />
         </div>
-        <textarea className="mt-3 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm"
-                  rows="3" placeholder="Description" />
+        <textarea
+          name="description"
+          value={form.description}
+          onChange={onChange}
+          className="mt-3 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm"
+          rows="3"
+          placeholder="Description"
+        />
+
         <div className="mt-4 flex gap-3">
-          <button className="rounded-lg bg-[#1c48a5] px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700">
-            Add Course
+          <button
+            onClick={onSave}
+            className="rounded-lg bg-[#1c48a5] px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 cursor-pointer"
+          >
+            {isEdit ? "Update Course" : "Add Course"}
           </button>
-          <button className="rounded-lg border border-slate-700 px-4 py-2 text-sm text-slate-200 hover:bg-slate-800">
+          <button
+            onClick={onReset}
+            className="rounded-lg border border-slate-700 px-4 py-2 text-sm text-slate-200 hover:bg-slate-800 cursor-pointer"
+          >
             Reset
           </button>
         </div>
@@ -50,27 +189,62 @@ const Courses = () => {
               </tr>
             </thead>
             <tbody>
-              {rows.map((r, idx) => (
-                <tr key={r.id} className={idx % 2 ? "bg-slate-900" : "bg-slate-950"}>
+              {items.map((r, idx) => (
+                <tr
+                  key={r._id}
+                  className={idx % 2 ? "bg-slate-900" : "bg-slate-950"}
+                >
                   <td className="p-3">{r.name}</td>
                   <td className="p-3">{r.subject}</td>
                   <td className="p-3">{r.credits}</td>
-                  <td className="p-3 text-slate-300">{r.desc}</td>
+                  <td className="p-3 text-slate-300">{r.description}</td>
                   <td className="p-3">
                     <div className="flex gap-2">
-                      <button className="rounded-md border border-slate-700 px-3 py-1 text-xs hover:bg-slate-800">View</button>
-                      <button className="rounded-md border border-slate-700 px-3 py-1 text-xs hover:bg-slate-800">Edit</button>
-                      <button className="rounded-md border border-red-700 px-3 py-1 text-xs text-red-300 hover:bg-red-950/40">Delete</button>
+                      <button
+                        onClick={() => onEditClick(r)}
+                        className="rounded-md border border-slate-700 px-3 py-1 text-xs hover:bg-slate-800 cursor-pointer"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => askDelete(r._id)}
+                        className="rounded-md border border-red-700 px-3 py-1 text-xs text-red-300 hover:bg-red-950/40 cursor-pointer"
+                      >
+                        Delete
+                      </button>
                     </div>
                   </td>
                 </tr>
               ))}
+              {!items.length && (
+                <tr>
+                  <td className="p-3 text-slate-400" colSpan={5}>
+                    No courses yet
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
       </Card>
-    </div>
-  )
-}
 
-export default Courses
+      <Toast
+        show={toast.show}
+        type={toast.type}
+        onClose={() => setToast((s) => ({ ...s, show: false }))}
+      >
+        {toast.message}
+      </Toast>
+
+      <ConfirmDialog
+        open={confirm.open}
+        title="Delete course"
+        message="Are you sure? This cannot be undone."
+        onCancel={() => setConfirm({ open: false, id: null })}
+        onConfirm={onConfirmDelete}
+      />
+    </div>
+  );
+};
+
+export default Courses;
