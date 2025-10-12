@@ -15,7 +15,13 @@ import {
 } from "../redux/courseSlice";
 import * as api from "../services/coursesApi";
 
-const initialForm = { name: "", subject: "", credits: "", description: "" };
+const initialForm = {
+  name: "",
+  number: "",
+  subject: "",
+  credits: "",
+  description: "",
+};
 
 const Courses = () => {
   const dispatch = useDispatch();
@@ -54,6 +60,7 @@ const Courses = () => {
     if (!course) return;
     setForm({
       name: course.name ?? "",
+      number: course.number ?? "",
       subject: course.subject ?? "",
       credits: String(course.credits ?? ""),
       description: course.description ?? "",
@@ -69,6 +76,7 @@ const Courses = () => {
 
   const clean = (f) => ({
     name: f.name.trim(),
+    number: f.number.trim(),
     subject: f.subject.trim(),
     credits: Number(f.credits || 0),
     description: f.description.trim(),
@@ -92,7 +100,8 @@ const Courses = () => {
       setToast({
         show: true,
         type: "error",
-        message: e?.response?.data?.message || "Save failed.",
+        message:
+          e?.response?.data?.message || e?.response?.data || "Save failed.",
       });
     }
   };
@@ -128,13 +137,20 @@ const Courses = () => {
           </span>
         }
       >
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-4">
           <input
             name="name"
             value={form.name}
             onChange={onChange}
             className="rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm"
-            placeholder="Course Name"
+            placeholder="Course Name (e.g., Algebra and Analysis)"
+          />
+          <input
+            name="number"
+            value={form.number}
+            onChange={onChange}
+            className="rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm"
+            placeholder="Course Number (e.g., MATH136)"
           />
           <input
             name="subject"
@@ -182,6 +198,7 @@ const Courses = () => {
             <thead className="bg-slate-800/60 text-slate-300">
               <tr>
                 <th className="p-3">Name</th>
+                <th className="p-3">Number</th>
                 <th className="p-3">Subject</th>
                 <th className="p-3">Credits</th>
                 <th className="p-3">Description</th>
@@ -195,6 +212,7 @@ const Courses = () => {
                   className={idx % 2 ? "bg-slate-900" : "bg-slate-950"}
                 >
                   <td className="p-3">{r.name}</td>
+                  <td className="p-3">{r.number}</td>
                   <td className="p-3">{r.subject}</td>
                   <td className="p-3">{r.credits}</td>
                   <td className="p-3 text-slate-300">{r.description}</td>
@@ -218,7 +236,7 @@ const Courses = () => {
               ))}
               {!items.length && (
                 <tr>
-                  <td className="p-3 text-slate-400" colSpan={5}>
+                  <td className="p-3 text-slate-400" colSpan={6}>
                     No courses yet
                   </td>
                 </tr>

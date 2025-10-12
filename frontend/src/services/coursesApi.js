@@ -1,4 +1,5 @@
 import axios from "axios";
+import { authHeader } from "./authApi";
 
 const BASE = import.meta.env.VITE_API_BASE || "http://localhost:3000";
 
@@ -14,21 +15,21 @@ export const fetchCourses = async () => {
 };
 
 export const createCourse = async (course) => {
-  const res = await http.post("/courses", course);
-  return res.data; 
+  const res = await http.post("/courses", course, { headers: authHeader() });
+  return res.data;
 };
 
 export const updateCourse = async (id, course) => {
-  await http.put(`/courses/${id}`, course); // 204
-  return { ...course, _id: id };            
+  await http.put(`/courses/${id}`, course, { headers: authHeader() }); // 204
+  return { ...course, _id: id };
 };
 
 export const deleteCourse = async (id) => {
-  await http.delete(`/courses/${id}`);      // 204
+  await http.delete(`/courses/${id}`, { headers: authHeader() }); // 204
   return id;
 };
 
 export const getCoursesCount = async () => {
   const { data } = await http.get("/courses/count");
-  return data.count;                         // number
+  return data.count; // number
 };
