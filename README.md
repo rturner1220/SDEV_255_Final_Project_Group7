@@ -23,3 +23,11 @@
 - Discord: (https://discord.com/channels/1417150627443642418/1417152913683386519)
 - GitHub: https://github.com/rturner1220/SDEV_255_Final_Project_Group7
 
+Login: 
+Teacher: 
+teacher2025
+password123 
+
+Student: 
+student2025
+student123
