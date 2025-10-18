@@ -4,6 +4,7 @@ const cors = require("cors");
 require("./db");
 const Course = require("./models/course");
 const Enrollment = require("./models/enrollment");
+const User = require("./models/user");
 
 const app = express();
 
@@ -40,6 +41,56 @@ function requireRole(role) {
 }
 
 const router = express.Router();
+
+// List users (optionally filter by role). Protected so only teachers can see it.
+router.get(
+  "/users",
+  requireAuth,
+  requireRole("teacher"),
+  async (req, res) => {
+    try {
+      const { role } = req.query;          // e.g. /api/users?role=teacher
+      const filter = role ? { role } : {};
+      const users = await User.find(filter)
+        .select("username email role createdAt") // never send password fields
+        .lean()
+        .exec();
+      res.json(users);
+    } catch (e) {
+      console.error("GET /users error:", e);
+      res.status(500).json({ error: "Failed to fetch users" });
+    }
+  }
+);
+
+// Count by role (or total if no role is provided)
+router.get("/users/count", async (req, res) => {
+  try {
+    const { role } = req.query;            // e.g. ?role=teacher or ?role=user
+    const filter = role ? { role } : {};
+    const count = await User.countDocuments(filter);
+    res.json({ role: role || "all", count });
+  } catch (e) {
+    res.status(500).json({ error: "Failed to count users" });
+  }
+});
+
+// Grouped counts for all roles + total (covers teacher/user/admin, etc.)
+router.get("/users/counts", async (req, res) => {
+  try {
+    const rows = await User.aggregate([
+      { $group: { _id: "$role", count: { $sum: 1 } } }
+    ]);
+    const out = { total: 0 };
+    for (const r of rows) {
+      out[r._id] = r.count;     // e.g. out.teacher, out.user, out.admin
+      out.total += r.count;
+    }
+    res.json(out);
+  } catch (e) {
+    res.status(500).json({ error: "Failed to fetch user counts" });
+  }
+});
 
 // Get all the courses
 router.get("/courses", async function (req, res) {
