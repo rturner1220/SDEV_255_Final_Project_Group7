@@ -25,6 +25,19 @@ export async function registerUser({ username, password, role }) {
   return data;
 }
 
+export async function getUserCounts() {
+  const { data } = await http.get("/users/counts"); // { total, teacher, user } OR { teachers, students }
+  return {
+    teachers: Number(
+      data.teachers ?? data.teacher ?? 0   // accept either key
+    ),
+    students: Number(
+      data.students ?? data.user ?? data.student ?? 0
+    ),
+  };
+}
+
+
 // Helper: inject token on protected requests (e.g., create/update/delete courses)
 export function authHeader() {
   const token = localStorage.getItem("token");

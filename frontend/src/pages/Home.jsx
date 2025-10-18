@@ -1,13 +1,14 @@
 import { useEffect, useState } from "react";
 import { getCoursesCount } from "../services/coursesApi.js";
+import { getUserCounts } from "../services/authApi.js";
 import Hero from "../components/Hero";
 import Card from "../components/Card";
 
 const Home = () => {
   const [counts, setCounts] = useState({
     courses: 0,
-    teachers: 8,
-    students: 120,
+    teachers: 0,
+    students: 0,
   });
 
   useEffect(() => {
@@ -16,6 +17,8 @@ const Home = () => {
       try {
         const n = await getCoursesCount();
         if (alive) setCounts((c) => ({ ...c, courses: n }));
+        const { teachers, students } = await getUserCounts();
+        if (alive) setCounts((c) => ({ ...c, teachers, students }));
       } catch (e) {
         console.error(e);
       }
@@ -40,7 +43,7 @@ const Home = () => {
             <div className="text-3xl font-bold">{s.value}</div>
             <p className="mt-1 text-sm text-slate-400">
               {" "}
-              {s.label === "Courses" ? "Live data" : "Sample data"}
+              {s.label === "Courses" ? "Live data" : "Live data"}
             </p>
           </Card>
         ))}

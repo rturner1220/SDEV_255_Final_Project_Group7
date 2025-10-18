@@ -1,6 +1,5 @@
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import Navbar from "./components/Navbar";
-import Home from "./pages/Home";
 import Courses from "./pages/Courses";
 import About from "./pages/About";
 import Contact from "./pages/Contact";
@@ -8,6 +7,10 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import RequireAuth from "./components/RequireAuth";
 import RequireRole from "./components/RequireRole";
+import StudentHome from "./pages/StudentHome";
+import StudentCourses from "./pages/StudentCourses";
+import MySchedule from "./pages/MySchedule";
+import RoleLanding from "./pages/RoleLanding";
 
 function App() {
   return (
@@ -15,18 +18,17 @@ function App() {
       <div className="min-h-screen w-full overflow-x-hidden bg-slate-950 text-slate-100">
         <Navbar />
         <Routes>
-        
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route
             path="/"
             element={
               <RequireAuth>
-                <Home />
+                <RoleLanding />
               </RequireAuth>
             }
           />
-         <Route
+          <Route
             path="/courses"
             element={
               <RequireAuth>
@@ -50,7 +52,38 @@ function App() {
               </RequireAuth>
             }
           />
-         {/* example of teacher-only page (if you later add a course-admin page) */}
+          {/* Student-only routes (Stage 2) */}
+          <Route
+            path="/student"
+            element={
+              <RequireAuth>
+                <RequireRole role="user">
+                  <StudentHome />
+                </RequireRole>
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/student/courses"
+            element={
+              <RequireAuth>
+                <RequireRole role="user">
+                  <StudentCourses />
+                </RequireRole>
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/student/schedule"
+            element={
+              <RequireAuth>
+                <RequireRole role="user">
+                  <MySchedule />
+                </RequireRole>
+              </RequireAuth>
+            }
+          />
+          {/* example of teacher-only page (if you later add a course-admin page) */}
           {/* <Route
             path="/courses/admin"
             element={
